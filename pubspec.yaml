@@ -48,6 +48,13 @@ dependencies:
   image_gallery_saver: ^2.0.3
   dio: ^5.4.0
   permission_handler:
+  flutter_sharing_intent: ^1.1.0
+  # share_plus:
+  flutter_share: ^2.0.0
+  flutter_wallpaper_manager: ^0.0.4
+  flutter_cache_manager: ^3.1.2
+  sqflite: ^2.3.0
+  simple_app_cache_manager: ^0.0.4
 
 
 dev_dependencies:

@@ -6,21 +6,27 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:flutter_share/flutter_share.dart';
+import 'package:flutter_wallpaper_manager/flutter_wallpaper_manager.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import 'package:wall_app/Color/color.dart';
 import 'package:wall_app/UI/navigation/navigation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../db/sqldb.dart';
 import '../../../font/font.dart';
 
 class SingleImage extends StatefulWidget {
-  const SingleImage({super.key, required this.img, required this.index});
+  const SingleImage({super.key, required this.img, required this.index, required this.singleImg});
   final List img;
   final int index;
+  final String singleImg;
 
   @override
   State<SingleImage> createState() => _SingleImageState();
@@ -31,19 +37,34 @@ class _SingleImageState extends State<SingleImage> {
       "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg";
   final String folderName = 'MyImages';
   bool isDownloading = false;
+  bool processing = false;
+  bool share = false;
   static const _url =
       "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg";
   var random = Random();
   List img = [];
   int selectedImg = 0;
+  String singleImg = '';
+  SqlDb sqlDb = SqlDb();
+  List localImg = [];
   @override
   void initState() {
-    print(widget.index);
+    localData();
+
     setState(() {
       img = widget.img;
       selectedImg = widget.index;
+      singleImg = widget.singleImg;
     });
     super.initState();
+  }
+
+  localData() async {
+    List res = await SqlDb().readData('select * from favorites');
+    setState(() {
+      localImg = res;
+      print(res);
+    });
   }
 
   @override
@@ -63,6 +84,13 @@ class _SingleImageState extends State<SingleImage> {
                 child: CarouselSlider.builder(
                   itemCount: img.length,
                   options: CarouselOptions(
+                    onPageChanged: (index, reason) {
+                      setState(() {
+                        selectedImg = index;
+                        singleImg = img[index];
+                        print(selectedImg);
+                      });
+                    },
                     autoPlay: false,
                     viewportFraction: 1,
                     initialPage: selectedImg,
@@ -71,7 +99,7 @@ class _SingleImageState extends State<SingleImage> {
                   itemBuilder: (context, index, realIdx) {
                     return Stack(
                       children: [
-                        Image.asset(img[index], fit: BoxFit.cover, height: h, width: w),
+                        Image.asset(img[index]['name'], fit: BoxFit.cover, height: h, width: w),
                         Container(
                           height: h,
                           width: w,
@@ -95,7 +123,23 @@ class _SingleImageState extends State<SingleImage> {
                         color: fontColor,
                       )),
                   IconButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        setState(() {
+                          share = true;
+                          isDownloading = true;
+                        });
+                        final directory = await getExternalStorageDirectory();
+
+                        final url = Uri.parse(imageUrl);
+                        final response = await http.get(url);
+                        var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
+                        print(ss);
+                        setState(() {
+                          isDownloading = false;
+                          share = false;
+                        });
+                        await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
+                      },
                       icon: Icon(
                         Icons.reply_all_rounded,
                         color: fontColor,
@@ -151,7 +195,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
-                          saveImage();
+                          _saveImage(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -184,14 +228,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          try {
-                            Uint8List imageBytes = await downloadImage(imageUrl);
-                            String imageName = 'my_image.jpg'; // You can change the name as needed
-                            await saveImageToGallery(imageBytes, folderName, imageName);
-                            // Add any additional logic or UI updates after saving the image
-                          } catch (e) {
-                            print('Error: $e');
-                          }
+                          apply();
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -225,7 +262,13 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          _saveImage(context);
+                          if (localImg.any((element) => element['img'] == selectedImg)) {
+                            await SqlDb().deleteData('DELETE FROM favorites where img ="$selectedImg" ');
+                          } else {
+                            await SqlDb().insertData('insert into favorites ("img","name") values("$selectedImg","$singleImg")');
+                          }
+
+                          localData();
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -235,7 +278,7 @@ class _SingleImageState extends State<SingleImage> {
                               child: Column(
                                 children: [
                                   Icon(
-                                    Icons.favorite_border,
+                                    localImg.any((element) => element['img'] == selectedImg) ? Icons.favorite : Icons.favorite_border,
                                     color: fontColor,
                                   ),
                                   SizedBox(
@@ -275,7 +318,7 @@ class _SingleImageState extends State<SingleImage> {
                               flex: 2,
                             ),
                             Text(
-                              "Saving Design...",
+                              share ? "preparing Design..." : "Saving Design...",
                               style: TextStyle(
                                 fontSize: 18,
                                 color: fontColor,
@@ -297,100 +340,178 @@ class _SingleImageState extends State<SingleImage> {
     );
   }
 
-  Future<void> downloadAndSaveImagee() async {
-    late http.Client client;
-    late String imageUrl;
-    client = http.Client();
-    // Replace the URL with the actual image URL you want to download and save
-    imageUrl =
-        "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg";
-    ;
-    try {
-      final response = await client.get(Uri.parse(imageUrl));
-
-      if (response.statusCode == 200) {
-        final Uint8List bytes = response.bodyBytes;
-        final appDocDir = await getApplicationDocumentsDirectory();
-        final String appDocPath = appDocDir.path;
-        final String imagePath = '$appDocPath/imagefolder';
-
-        // Create the image folder if it doesn't exist
-        await Directory(imagePath).create(recursive: true);
-
-        // Save the image to the image folder
-        final File imageFile = File('$imagePath/image.jpg');
-        await imageFile.writeAsBytes(bytes);
-
-        print('Image downloaded and saved to $imagePath');
-      } else {
-        print('Failed to download image: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error downloading image: $e');
-    } finally {
-      client.close();
-    }
-  }
-
-  Future<void> saveImageToGallery(Uint8List imageBytes, String folderName, String imageName) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final folderPath = '${directory!.path}/hello';
-
-    await Directory(folderPath).create(recursive: true);
-
-    final imagePath = '$folderPath/$imageName';
-    await File(imagePath).writeAsBytes(imageBytes);
-
-    await ImageGallerySaver.saveFile(imagePath);
-    print(imagePath);
-  }
-
-  Future<Uint8List> downloadImage(String imageUrl) async {
-    final response = await http.get(Uri.parse(imageUrl));
-
-    if (response.statusCode == 200) {
-      print(response.bodyBytes);
-      return response.bodyBytes;
-    } else {
-      throw Exception('Failed to load image');
-    }
-  }
-
-  saveImage() async {
-    var url =
-        "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg";
-    var response = await Dio().get(url, options: Options(responseType: ResponseType.bytes));
-    final result = await ImageGallerySaver.saveImage(Uint8List.fromList(response.data), quality: 100, name: DateTime.now().microsecond.toString());
-    print(result);
-  }
-
-  Future<void> downloadAndSaveImage() async {
-    var ur =
-        "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg";
-    final response = await http.get(Uri.parse(ur));
-
-    var tempDir = await getTemporaryDirectory();
-    var tempDirPath = tempDir.path;
-    final myAppPath = '$tempDirPath/my_app';
-    final res = await Directory(myAppPath).create(recursive: true);
-
-    if (response.statusCode == 200) {
-      final fileName = DateTime.now().microsecond;
-      final filePath = '${res.path}/$fileName';
-
-      final File file = File(filePath);
-      await file.writeAsBytes(Uint8List.fromList(response.bodyBytes));
-
-      print('Image downloaded and saved to: $filePath');
-    } else {
-      print('Failed to download image. Status code: ${response.statusCode}');
-    }
-  }
-
-  _saveNetworkImage() async {
+  Future<void> setWallpaper(int? selectedOption) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    setState(() {
+      share = true;
+      isDownloading = true;
+    });
     final directory = await getExternalStorageDirectory();
-    final myimagepath = '${directory!.path}/myimages';
-    final myimgdir = await new Directory(myimagepath).create();
+
+    final url = Uri.parse(imageUrl);
+    final response = await http.get(url);
+    var path = await File('${directory!.path}${DateTime.now().millisecondsSinceEpoch}').writeAsBytes(response.bodyBytes);
+    print(path);
+
+    if (selectedOption == 1) {
+      int location = await WallpaperManager.HOME_SCREEN;
+      print(location); //can be Home/Lock Screen
+      bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
+    } else if (selectedOption == 2) {
+   
+      // await WallpaperManager.clearWallpaper();
+      int location = await WallpaperManager.LOCK_SCREEN;
+      print(location); //can be Home/Lock Screen
+      bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
+    } else if (selectedOption == 3) {
+      // await WallpaperManager.clearWallpaper();
+      int location = await WallpaperManager.BOTH_SCREEN;
+      print(location); //can be Home/Lock Screen
+      bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
+    } else if (selectedOption == 4) {}
+    setState(() {
+      share = false;
+      isDownloading = false;
+    });
+    scaffoldMessenger.showSnackBar(SnackBar(
+      content: Text(
+        'wallpaper successfully added',
+        style: TextStyle(
+          fontSize: 12,
+          color: Color.fromARGB(255, 218, 210, 210),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: menuD,
+    ));
+  }
+
+  apply() {
+    content:
+    int? selectedOption = 1;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            insetPadding: EdgeInsets.all(25),
+            contentPadding: EdgeInsets.all(12),
+            backgroundColor: menuD, actionsPadding: EdgeInsets.all(8),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text("CANCEL", style: TextStyle(color: white3, fontSize: 12))),
+              TextButton(
+                  onPressed: () async {
+                    await setWallpaper(selectedOption);
+
+                    Navigator.pop(context);
+                  },
+                  child: Text("OK", style: TextStyle(color: white2, fontSize: 12)))
+            ],
+            content: Container(
+              width: MediaQuery.of(context).size.width,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  SizedBox(
+                    height: 12,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 25),
+                    child: Text("Set As:", style: TextStyle(color: white2, fontSize: 20)),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    title: Text('Home Screen', style: TextStyle(color: white2, fontSize: 18)),
+                    leading: Radio<int>(
+                      value: 1,
+                      groupValue: selectedOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          selectedOption = value;
+                          print("Selected Option: $selectedOption");
+                        });
+                      },
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    title: Text('Lock Screen', style: TextStyle(color: white2, fontSize: 18)),
+                    leading: Radio<int>(
+                      value: 2,
+                      groupValue: selectedOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          selectedOption = value;
+                          print("Selected Option: $selectedOption");
+                        });
+                      },
+                    ),
+                  ),
+                  Stack(
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                        title: Text('Home & Lock Screens', style: TextStyle(color: white2, fontSize: 18)),
+                        leading: Radio<int>(
+                          value: 3,
+                          groupValue: selectedOption,
+                          onChanged: (int? value) {
+                            setState(() {
+                              selectedOption = value;
+                              print("Selected Option: $selectedOption");
+                            });
+                          },
+                        ),
+                      ),
+                      processing ? Center(child: CircularProgressIndicator()) : SizedBox()
+                    ],
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    title: Text('Crop', style: TextStyle(color: white2, fontSize: 18)),
+                    leading: Radio<int>(
+                      value: 4,
+                      groupValue: selectedOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          selectedOption = value;
+                          print("Selected Option: $selectedOption");
+                        });
+                      },
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    title: Text(
+                      'Set with...',
+                      style: TextStyle(color: white2, fontSize: 18),
+                    ),
+                    leading: Radio<int>(
+                      value: 5,
+                      groupValue: selectedOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          selectedOption = value;
+                          print("Selected Option: $selectedOption");
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Set the default value here
+          );
+        });
+      },
+    );
   }
 
   info() {
@@ -555,6 +676,7 @@ class _SingleImageState extends State<SingleImage> {
 
       // Ask the user to save it
       final params = SaveFileDialogParams(sourceFilePath: file.path);
+      print(file.path);
       final finalPath = await FlutterFileDialog.saveFile(params: params);
 
       if (finalPath != null) {

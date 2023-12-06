@@ -3,8 +3,10 @@ import 'dart:ffi';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
+import 'package:provider/provider.dart';
 import 'package:wall_app/Color/color.dart';
 
+import '../../provider/all_provider.dart';
 import '../home/favorite/favorite.dart';
 import '../home/home.dart';
 
@@ -37,42 +39,49 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: background,
-      extendBody: true,
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: navColor,
-        // unselectedLabelStyle: TextStyle(fontSize: 11.sp),
-        landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
-        unselectedIconTheme: IconThemeData(
-          color: navUnSelect,
-        ),
-        unselectedLabelStyle: TextStyle(color: navUnSelect),
-        unselectedItemColor: navUnSelect,
-        selectedIconTheme: IconThemeData(
-          color: navSelect,
-        ),
-        selectedItemColor: navSelect,
-        onTap: _onItemTapped,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.copy_rounded,
+    return Consumer<ProviderS>(
+      builder: (context, color, child) => Scaffold(
+        backgroundColor: color.pbackground,
+        extendBody: true,
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: color.pnaveColor,
+          // unselectedLabelStyle: TextStyle(fontSize: 11.sp),
+          landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
+          unselectedIconTheme: IconThemeData(
+            color: navUnSelect,
+          ),
+          unselectedLabelStyle: TextStyle(color: navUnSelect, fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedItemColor: navUnSelect,
+          selectedLabelStyle: TextStyle(color: navSelect, fontWeight: FontWeight.bold, fontSize: 14),
+          selectedIconTheme: IconThemeData(
+            color: navSelect,
+          ),
+          selectedItemColor: navSelect,
+          onTap: _onItemTapped,
+          showSelectedLabels: true,
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          items: <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.copy_rounded,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 1.5,
+                    ),
+                  ],
+                  weight: 1500),
+              label: 'Categories',
             ),
-            label: 'Categories',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: 'Favorites',
-          ),
-        ],
-      ),
-      body: Center(
-        child: _pages.elementAt(_selectedIndex), //New
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_border, shadows: [Shadow(blurRadius: 1)]),
+              label: 'Favorites',
+            ),
+          ],
+        ),
+        body: Center(
+          child: _pages.elementAt(_selectedIndex), //New
+        ),
       ),
     );
   }
