@@ -87,7 +87,7 @@ class _SingleImageState extends State<SingleImage> {
                     onPageChanged: (index, reason) {
                       setState(() {
                         selectedImg = index;
-                        singleImg = img[index];
+                        singleImg = img[index]['name'];
                         print(selectedImg);
                       });
                     },
@@ -358,7 +358,6 @@ class _SingleImageState extends State<SingleImage> {
       print(location); //can be Home/Lock Screen
       bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
     } else if (selectedOption == 2) {
-   
       // await WallpaperManager.clearWallpaper();
       int location = await WallpaperManager.LOCK_SCREEN;
       print(location); //can be Home/Lock Screen
