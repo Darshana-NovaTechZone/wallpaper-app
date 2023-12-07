@@ -10,7 +10,9 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:flutter_share/flutter_share.dart';
 import 'package:flutter_wallpaper_manager/flutter_wallpaper_manager.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:path/path.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -161,7 +163,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
-                          info();
+                          info(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -195,7 +197,8 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
-                          _saveImage(context);
+                          // _saveImage(context);
+                          imageSave(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -228,7 +231,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          apply();
+                          apply(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -340,7 +343,7 @@ class _SingleImageState extends State<SingleImage> {
     );
   }
 
-  Future<void> setWallpaper(int? selectedOption) async {
+  Future<void> setWallpaper(int? selectedOption, BuildContext context) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     setState(() {
       share = true;
@@ -385,7 +388,7 @@ class _SingleImageState extends State<SingleImage> {
     ));
   }
 
-  apply() {
+  apply(BuildContext context) {
     content:
     int? selectedOption = 1;
     showDialog(
@@ -404,7 +407,7 @@ class _SingleImageState extends State<SingleImage> {
                   child: Text("CANCEL", style: TextStyle(color: white3, fontSize: 12))),
               TextButton(
                   onPressed: () async {
-                    await setWallpaper(selectedOption);
+                    await setWallpaper(selectedOption, context);
 
                     Navigator.pop(context);
                   },
@@ -513,7 +516,7 @@ class _SingleImageState extends State<SingleImage> {
     );
   }
 
-  info() {
+  info(BuildContext context) {
     showModalBottomSheet(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
         backgroundColor: menuD,
@@ -648,69 +651,30 @@ class _SingleImageState extends State<SingleImage> {
         });
   }
 
-  Future<void> _saveImage(BuildContext context) async {
+  imageSave(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late String message;
     setState(() {
       isDownloading = true;
     });
-    final directory = await getExternalStorageDirectory();
-    final myImagePath = '${directory!.path}/Relaxing Wallpaper HD';
-    final myImgDir = await new Directory(myImagePath).create(recursive: true);
-    print(myImgDir);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    late String message;
-
-    try {
-      // Download image
-      final http.Response response = await http.get(Uri.parse(_url));
-
-      // Get temporary directory
-      final dir = await getTemporaryDirectory();
-
-      // Create an image name
-      var filename = '${myImgDir.path}/Relaxing Wallpaper${random.nextInt(100)}.png';
-      print(filename);
-      // Save to filesystem
-      final file = File(filename);
-      await file.writeAsBytes(response.bodyBytes);
-
-      // Ask the user to save it
-      final params = SaveFileDialogParams(sourceFilePath: file.path);
-      print(file.path);
-      final finalPath = await FlutterFileDialog.saveFile(params: params);
-
-      if (finalPath != null) {
-        message = 'Image saved ';
-      }
-    } catch (e) {
-      message = e.toString();
-      scaffoldMessenger.showSnackBar(SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: menuD,
-      ));
-    }
-
-    if (message != null) {
-      scaffoldMessenger.showSnackBar(SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-            fontSize: 12,
-            color: Color.fromARGB(255, 218, 210, 210),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: menuD,
-      ));
-    }
+    final tempDir = await getTemporaryDirectory();
+    final path = '${tempDir.path}/${DateTime.now()}.jpg';
+    await Dio().download(_url, path);
+    await GallerySaver.saveImage(path, albumName: 'wallpaper');
     setState(() {
       isDownloading = false;
     });
+    message = e.toString();
+    scaffoldMessenger.showSnackBar(SnackBar(
+      content: Text(
+        'Image successfully saved',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: menuD,
+    ));
   }
 }

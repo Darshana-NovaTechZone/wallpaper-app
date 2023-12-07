@@ -32,7 +32,7 @@ class _SplashState extends State<Splash> {
     if (modeData.isNotEmpty) {
       Provider.of<ProviderS>(context, listen: false).columnIndex = modeData[0]['colum'];
       if (modeData[0]['status'] == 1) {
-        Provider.of<ProviderS>(context, listen: false).pbackground = white;
+        Provider.of<ProviderS>(context, listen: false).pbackground = white1;
         Provider.of<ProviderS>(context, listen: false).pfont = black;
         Provider.of<ProviderS>(context, listen: false).pfont2 = black2;
         Provider.of<ProviderS>(context, listen: false).appbarColor = appbarColor;

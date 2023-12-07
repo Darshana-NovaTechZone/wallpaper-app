@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_share/flutter_share.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 
@@ -44,7 +45,7 @@ class _MenuButtonState extends State<MenuButton> {
     );
   }
 
-  void choiceAction(String choice, BuildContext context) {
+  void choiceAction(String choice, BuildContext context) async {
     if (choice == Constants.FirstItem) {
       Navigator.push(
         context,
@@ -55,10 +56,74 @@ class _MenuButtonState extends State<MenuButton> {
     } else if (choice == Constants.ThirdItem) {
       print('I Third Item');
     } else if (choice == Constants.fourthItem) {
-      print('I Third Item');
+      await FlutterShare.share(
+          title:
+              'Relaxing Wallpaper HD\nI Would like to share this with you. Here You Can Download This Application from PlayStore\nhttps://play.google.com/store/apps/details?id=relaxing.wallpaperhd.backgrounds ');
     } else if (choice == Constants.fifthItem) {
-      print('I Third Item');
+      about();
     }
+  }
+
+  about() {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer<ProviderS>(
+          builder: (context, color, child) => StatefulBuilder(builder: (context, setState) {
+                var h = MediaQuery.of(context).size.height;
+                var w = MediaQuery.of(context).size.width;
+                return AlertDialog(
+                  insetPadding: EdgeInsets.all(25),
+                  backgroundColor: color.pMenuColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  actionsPadding: EdgeInsets.all(0),
+                  actions: [
+                    TextButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                        },
+                        child: Text("OK", style: TextStyle(color: color.pfont, fontSize: 13))),
+                  ],
+                  content: Container(
+                    width: w,
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      SizedBox(
+                        height: 15,
+                      ),
+                      SizedBox(
+                          width: 100,
+                          height: 100,
+                          child: ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.asset(
+                                'assets/1.PNG',
+                                fit: BoxFit.cover,
+                              ))),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text("Relaxing Wallpaper HD", style: TextStyle(color: color.pfont, fontSize: 20, fontWeight: FontWeight.bold)),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text("Version 22",
+                          style: TextStyle(
+                            color: color.pfont2,
+                            fontSize: 14,
+                          )),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Text("Copyright @ novatechzone Developer \n All right reserved",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: color.pfont2,
+                            fontSize: 14,
+                          )),
+                    ]),
+                  ),
+                );
+              })),
+    );
   }
 }
 

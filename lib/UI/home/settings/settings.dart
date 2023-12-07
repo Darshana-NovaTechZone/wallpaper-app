@@ -18,6 +18,7 @@ class _SettingsState extends State<Settings> with CacheMixin {
   bool isLite = true;
   List modeData = [];
   SqlDb sqlDb = SqlDb();
+  bool isDownloading = false;
   int? columnindex = 3;
   @override
   void initState() {
@@ -34,7 +35,9 @@ class _SettingsState extends State<Settings> with CacheMixin {
     });
     if (modeData.isEmpty) {
       await SqlDb().insertData('insert into mood ("status","colum") values(0,3)');
+      modeData = await SqlDb().readData('select * from mood');
       setState(() {
+        columnindex = modeData[0]['colum'];
         isLite = true;
       });
     } else {
@@ -70,161 +73,401 @@ class _SettingsState extends State<Settings> with CacheMixin {
             ),
           ),
         ),
-        body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(
-            height: 20,
-          ),
-          Container(
-            padding: const EdgeInsets.all(12.0),
-            width: w,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Dark theme",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: color.pfont,
-                        fontFamily: font,
-                      ),
-                    ),
-                    SizedBox(
-                      height: 4,
-                    ),
-                    Text(
-                      "Better for eyesight & battery life",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: color.pfont2,
-                        fontFamily: font,
-                      ),
-                    ),
-                  ],
+        body: SingleChildScrollView(
+          child: Stack(
+            children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                SizedBox(
+                  height: 20,
                 ),
-                Switch(
-                  value: isLite,
-                  onChanged: (value) async {
-                    setState(() {
-                      isLite = value;
-                    });
-
-                    if (isLite == true) {
-                      Provider.of<ProviderS>(context, listen: false).pbackground = background;
-                      Provider.of<ProviderS>(context, listen: false).pfont = white1;
-                      Provider.of<ProviderS>(context, listen: false).pfont2 = white3;
-                      Provider.of<ProviderS>(context, listen: false).appbarColor = black1;
-                      Provider.of<ProviderS>(context, listen: false).pnaveColor = navColor;
-
-                      Provider.of<ProviderS>(context, listen: false).pMenuColor = menuD;
-                      await SqlDb().updateData('update mood set status ="0"');
-                    } else {
-                      await SqlDb().updateData('update mood set status ="1"');
-
-                      Provider.of<ProviderS>(context, listen: false).pbackground = white;
-                      Provider.of<ProviderS>(context, listen: false).pfont = black;
-                      Provider.of<ProviderS>(context, listen: false).pfont2 = black2;
-                      Provider.of<ProviderS>(context, listen: false).appbarColor = appbarColor;
-                      Provider.of<ProviderS>(context, listen: false).pnaveColor = white;
-                      Provider.of<ProviderS>(context, listen: false).pMenuColor = white;
-                    }
-                    data();
-                  },
-                )
-              ],
-            ),
-          ),
-          InkWell(
-            onTap: () {
-              changeColum();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12.0),
-              width: w,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Display Design",
-                    style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    height: 4,
-                  ),
-                  Text(
-                    "$columnindex Columns",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: color.pfont2,
-                      fontFamily: font,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: () {},
-            child: Container(
-              padding: const EdgeInsets.all(12.0),
-              width: w,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Notification",
-                    style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    height: 4,
-                  ),
-                  Text(
-                    "Subscribe to receive Designs update",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: color.pfont2,
-                      fontFamily: font,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: () {},
-            child: Container(
-              padding: const EdgeInsets.all(12.0),
-              width: w,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Clear Cache",
-                    style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    height: 4,
-                  ),
-                  ValueListenableBuilder(
-                    valueListenable: cacheSizeNotifier,
-                    builder: (context, cacheSize, child) => Text(
-                      cacheSize,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: color.pfont2,
-                        fontFamily: font,
+                Container(
+                  padding: const EdgeInsets.all(12.0),
+                  width: w,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Dark theme",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: color.pfont,
+                              fontFamily: font,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 4,
+                          ),
+                          Text(
+                            "Better for eyesight & battery life",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: color.pfont2,
+                              fontFamily: font,
+                            ),
+                          ),
+                        ],
                       ),
+                      Switch(
+                        value: isLite,
+                        onChanged: (value) async {
+                          setState(() {
+                            isLite = value;
+                          });
+
+                          if (isLite == true) {
+                            Provider.of<ProviderS>(context, listen: false).pbackground = background;
+                            Provider.of<ProviderS>(context, listen: false).pfont = white1;
+                            Provider.of<ProviderS>(context, listen: false).pfont2 = white3;
+                            Provider.of<ProviderS>(context, listen: false).appbarColor = black1;
+                            Provider.of<ProviderS>(context, listen: false).pnaveColor = navColor;
+
+                            Provider.of<ProviderS>(context, listen: false).pMenuColor = menuD;
+                            await SqlDb().updateData('update mood set status ="0"');
+                          } else {
+                            await SqlDb().updateData('update mood set status ="1"');
+
+                            Provider.of<ProviderS>(context, listen: false).pbackground = white1;
+                            Provider.of<ProviderS>(context, listen: false).pfont = black;
+                            Provider.of<ProviderS>(context, listen: false).pfont2 = black2;
+                            Provider.of<ProviderS>(context, listen: false).appbarColor = appbarColor;
+                            Provider.of<ProviderS>(context, listen: false).pnaveColor = white;
+                            Provider.of<ProviderS>(context, listen: false).pMenuColor = white;
+                          }
+                          data();
+                        },
+                      )
+                    ],
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    changeColum();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Display Design",
+                          style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          "$columnindex Columns",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: color.pfont2,
+                            fontFamily: font,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+                InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Notification",
+                          style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          "Subscribe to receive Designs update",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: color.pfont2,
+                            fontFamily: font,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    cacheClear();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Clear Cache",
+                              style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(
+                              height: 4,
+                            ),
+                            ValueListenableBuilder(
+                              valueListenable: cacheSizeNotifier,
+                              builder: (context, cacheSize, child) => Text(
+                                cacheSize == '0 B' ? "Free up  0 Bytes of space" : "Free up  $cacheSize of space",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: color.pfont2,
+                                  fontFamily: font,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          Icons.delete,
+                          color: white3,
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Design Save TO",
+                          style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          "/Storage/emulated/0/Pictures/wallpaper",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: color.pfont2,
+                            fontFamily: font,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Copyright information",
+                          style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          "Copyright information Copyright information Copyright informationCopyright informationCopyright information Copyright information Copyright information",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: color.pfont2,
+                            fontFamily: font,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Privacy Policy",
+                          style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          "App Terms & Policies",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: color.pfont2,
+                            fontFamily: font,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    width: w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "About",
+                          style: TextStyle(fontSize: 18, color: color.pfont, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          "App info & build version",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: color.pfont2,
+                            fontFamily: font,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ]),
+              isDownloading
+                  ? Container(
+                      height: h,
+                      width: w,
+                      color: black.withOpacity(0.3),
+                    )
+                  : Container(),
+              isDownloading
+                  ? Positioned(
+                      top: h / 4,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(30.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(color: color.pMenuColor, borderRadius: BorderRadius.circular(10)),
+                            // height: h / 6,
+                            width: w,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Text(
+                                    "Clearing Cache.",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: color.pfont,
+                                      fontFamily: font,
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Spacer(),
+                                    CircularProgressIndicator(color: navSelect, strokeWidth: 5),
+                                    Spacer(
+                                      flex: 2,
+                                    ),
+                                    Text(
+                                      "Please waite...",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: color.pfont,
+                                        fontFamily: font,
+                                      ),
+                                    ),
+                                    Spacer(
+                                      flex: 5,
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: 20,
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : SizedBox()
+            ],
           ),
-        ]),
+        ),
       ),
+    );
+  }
+
+  cachestatus() async {
+    setState(() {
+      isDownloading = true;
+    });
+    cacheManager.clearCache();
+
+    await Future.delayed(Duration(seconds: 1)).then((value) {
+      updateCacheSize();
+      setState(() {
+        isDownloading = false;
+      });
+    });
+  }
+
+  cacheClear() {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer<ProviderS>(
+          builder: (context, color, child) => StatefulBuilder(builder: (context, setState) {
+                return AlertDialog(
+                  backgroundColor: color.pMenuColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+                  actionsPadding: EdgeInsets.all(0),
+                  actions: [
+                    TextButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                        },
+                        child: Text("CANCEL", style: TextStyle(color: color.pfont, fontSize: 13))),
+                    TextButton(
+                        onPressed: () async {
+                          setState(() {
+                            isDownloading = true;
+                          });
+                          cachestatus();
+                          Navigator.pop(context);
+                        },
+                        child: Text("YES", style: TextStyle(color: color.pfont, fontSize: 13)))
+                  ],
+                  content: Column(mainAxisSize: MainAxisSize.min, children: [
+                    SizedBox(
+                      height: 15,
+                    ),
+                    Text("Are you sure want to clear cache ?", style: TextStyle(color: color.pfont, fontSize: 18))
+                  ]),
+                );
+              })),
     );
   }
 
