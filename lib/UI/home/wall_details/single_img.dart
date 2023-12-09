@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:admob_flutter/admob_flutter.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,9 @@ class SingleImage extends StatefulWidget {
 }
 
 class _SingleImageState extends State<SingleImage> {
+  GlobalKey<ScaffoldState> scaffoldState = GlobalKey();
+  late AdmobInterstitial interstitialAd;
+  late AdmobReward rewardAd;
   final String imageUrl =
       "https://ss0.baidu.com/94o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=a62e824376d98d1069d40a31113eb807/838ba61ea8d3fd1fc9c7b6853a4e251f94ca5f46.jpg";
   final String folderName = 'MyImages';
@@ -51,21 +55,44 @@ class _SingleImageState extends State<SingleImage> {
   List localImg = [];
   @override
   void initState() {
-    localData();
-
     setState(() {
       img = widget.img;
       selectedImg = widget.index;
       singleImg = widget.singleImg;
     });
     super.initState();
+    interstitialAd = AdmobInterstitial(
+      adUnitId: getInterstitialAdUnitId()!,
+      listener: (AdmobAdEvent event, Map<String, dynamic>? args) {
+        if (event == AdmobAdEvent.closed) interstitialAd.load();
+        // handleEvent(event, args, 'Interstitial');
+      },
+    );
+    rewardAd = AdmobReward(
+      adUnitId: getRewardBasedVideoAdUnitId()!,
+      listener: (AdmobAdEvent event, Map<String, dynamic>? args) {
+        if (event == AdmobAdEvent.closed) rewardAd.load();
+        // handleEvent(event, args, 'Reward');
+      },
+    );
+
+    interstitialAd.load();
+    rewardAd.load();
+    localData();
   }
 
   localData() async {
     List res = await SqlDb().readData('select * from favorites');
+
     setState(() {
       localImg = res;
       print(res);
+    });
+
+    Future.delayed(Duration(seconds: 3)).then((value) async {
+      print('dddddddddddddddddddddddd');
+      final isLoaded = await interstitialAd.isLoaded;
+      interstitialAd.show();
     });
   }
 
@@ -126,21 +153,27 @@ class _SingleImageState extends State<SingleImage> {
                       )),
                   IconButton(
                       onPressed: () async {
-                        setState(() {
-                          share = true;
-                          isDownloading = true;
-                        });
-                        final directory = await getExternalStorageDirectory();
+                        final isLoaded = await interstitialAd.isLoaded;
+                        if (isLoaded ?? false) {
+                          interstitialAd.show();
+                        } else {
+                          // showSnackBar('Interstitial ad is still loading...');
+                        }
+                        // setState(() {
+                        //   share = true;
+                        //   isDownloading = true;
+                        // });
+                        // final directory = await getExternalStorageDirectory();
 
-                        final url = Uri.parse(imageUrl);
-                        final response = await http.get(url);
-                        var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
-                        print(ss);
-                        setState(() {
-                          isDownloading = false;
-                          share = false;
-                        });
-                        await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
+                        // final url = Uri.parse(imageUrl);
+                        // final response = await http.get(url);
+                        // var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
+                        // print(ss);
+                        // setState(() {
+                        //   isDownloading = false;
+                        //   share = false;
+                        // });
+                        // await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
                       },
                       icon: Icon(
                         Icons.reply_all_rounded,
@@ -676,5 +709,30 @@ class _SingleImageState extends State<SingleImage> {
       ),
       backgroundColor: menuD,
     ));
+  }
+
+  String? getInterstitialAdUnitId() {
+    if (Platform.isIOS) {
+      return 'ca-app-pub-3940256099942544/4411468910';
+    } else if (Platform.isAndroid) {
+      return 'ca-app-pub-3940256099942544/1033173712';
+    }
+    return null;
+  }
+
+  String? getRewardBasedVideoAdUnitId() {
+    if (Platform.isIOS) {
+      return 'ca-app-pub-3940256099942544/1712485313';
+    } else if (Platform.isAndroid) {
+      return 'ca-app-pub-3940256099942544/5224354917';
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    interstitialAd.dispose();
+    rewardAd.dispose();
+    super.dispose();
   }
 }

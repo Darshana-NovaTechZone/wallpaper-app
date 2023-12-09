@@ -1,9 +1,16 @@
+
+import 'package:admob_flutter/admob_flutter.dart';
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 import 'package:wall_app/UI/splash/splash.dart';
 import 'package:wall_app/provider/all_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize without device test ids
+  Admob.initialize();
+  // MobileAds.initialize();
   runApp(
     MultiProvider(
       providers: [

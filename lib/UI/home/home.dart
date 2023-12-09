@@ -9,6 +9,7 @@ import '../../Color/color.dart';
 import '../../font/font.dart';
 import '../../provider/all_provider.dart';
 import '../widget/menu_button.dart';
+import 'add/ad.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -67,7 +68,7 @@ class _HomeState extends State<Home> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    PageTransition(type: PageTransitionType.rightToLeft, child: WallDetails(), inheritTheme: true, ctx: context),
+                    PageTransition(type: PageTransitionType.rightToLeft, child: MyMaterialApp(), inheritTheme: true, ctx: context),
                   );
                 },
                 child: Stack(
