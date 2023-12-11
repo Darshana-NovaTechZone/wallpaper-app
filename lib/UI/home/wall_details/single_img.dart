@@ -53,19 +53,24 @@ class _SingleImageState extends State<SingleImage> {
   String singleImg = '';
   SqlDb sqlDb = SqlDb();
   List localImg = [];
+  int x = 0;
   @override
   void initState() {
+    localData();
     setState(() {
       img = widget.img;
       selectedImg = widget.index;
       singleImg = widget.singleImg;
     });
-    super.initState();
+
     interstitialAd = AdmobInterstitial(
       adUnitId: getInterstitialAdUnitId()!,
       listener: (AdmobAdEvent event, Map<String, dynamic>? args) {
-        if (event == AdmobAdEvent.closed) interstitialAd.load();
-        // handleEvent(event, args, 'Interstitial');
+        print(event);
+        print('ggggggggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggaaaaaaaaaaaaggggggggg');
+        if (event == AdmobAdEvent.closed)
+          // handleEvent(event, args, 'Interstitial');
+          print('ggggggggggaaaaaaaaaaaaggggggggg');
       },
     );
     rewardAd = AdmobReward(
@@ -78,7 +83,7 @@ class _SingleImageState extends State<SingleImage> {
 
     interstitialAd.load();
     rewardAd.load();
-    localData();
+    super.initState();
   }
 
   localData() async {
@@ -89,10 +94,13 @@ class _SingleImageState extends State<SingleImage> {
       print(res);
     });
 
-    Future.delayed(Duration(seconds: 3)).then((value) async {
+    await Future.delayed(Duration(seconds: 6)).then((value) async {
       print('dddddddddddddddddddddddd');
       final isLoaded = await interstitialAd.isLoaded;
       interstitialAd.show();
+      setState(() {
+        x = 10;
+      });
     });
   }
 
@@ -145,7 +153,14 @@ class _SingleImageState extends State<SingleImage> {
                 children: [
                   IconButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        if (x == 0) {
+                          interstitialAd.show();
+                        } else {
+                          setState(() {
+                            x = 10;
+                          });
+                          Navigator.pop(context);
+                        }
                       },
                       icon: Icon(
                         Icons.arrow_back,
@@ -153,27 +168,28 @@ class _SingleImageState extends State<SingleImage> {
                       )),
                   IconButton(
                       onPressed: () async {
-                        final isLoaded = await interstitialAd.isLoaded;
-                        if (isLoaded ?? false) {
+                        if (x == 0) {
                           interstitialAd.show();
                         } else {
-                          // showSnackBar('Interstitial ad is still loading...');
-                        }
-                        // setState(() {
-                        //   share = true;
-                        //   isDownloading = true;
-                        // });
-                        // final directory = await getExternalStorageDirectory();
+                          setState(() {
+                            x = 10;
+                          });
+                          setState(() {
+                            share = true;
+                            isDownloading = true;
+                          });
+                          final directory = await getExternalStorageDirectory();
 
-                        // final url = Uri.parse(imageUrl);
-                        // final response = await http.get(url);
-                        // var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
-                        // print(ss);
-                        // setState(() {
-                        //   isDownloading = false;
-                        //   share = false;
-                        // });
-                        // await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
+                          final url = Uri.parse(imageUrl);
+                          final response = await http.get(url);
+                          var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
+                          print(ss);
+                          setState(() {
+                            isDownloading = false;
+                            share = false;
+                          });
+                          await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
+                        }
                       },
                       icon: Icon(
                         Icons.reply_all_rounded,
@@ -196,7 +212,14 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
-                          info(context);
+                          if (x == 0) {
+                            interstitialAd.show();
+                          } else {
+                            setState(() {
+                              x = 10;
+                            });
+                            info(context);
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -230,8 +253,15 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
+                          if (x == 0) {
+                            interstitialAd.show();
+                          } else {
+                            setState(() {
+                              x = 10;
+                            });
+                            imageSave(context);
+                          }
                           // _saveImage(context);
-                          imageSave(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -264,7 +294,14 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          apply(context);
+                          if (x == 0) {
+                            interstitialAd.show();
+                          } else {
+                            setState(() {
+                              x = 10;
+                            });
+                            apply(context);
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -298,13 +335,20 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          if (localImg.any((element) => element['img'] == selectedImg)) {
-                            await SqlDb().deleteData('DELETE FROM favorites where img ="$selectedImg" ');
+                          if (x == 0) {
+                            interstitialAd.show();
                           } else {
-                            await SqlDb().insertData('insert into favorites ("img","name") values("$selectedImg","$singleImg")');
-                          }
+                            setState(() {
+                              x = 10;
+                            });
+                            if (localImg.any((element) => element['img'] == selectedImg)) {
+                              await SqlDb().deleteData('DELETE FROM favorites where img ="$selectedImg" ');
+                            } else {
+                              await SqlDb().insertData('insert into favorites ("img","name") values("$selectedImg","$singleImg")');
+                            }
 
-                          localData();
+                            localData();
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -369,7 +413,7 @@ class _SingleImageState extends State<SingleImage> {
                       ),
                     ),
                   )
-                : SizedBox()
+                : SizedBox(),
           ],
         ),
       ),

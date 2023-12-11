@@ -68,7 +68,7 @@ class _HomeState extends State<Home> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    PageTransition(type: PageTransitionType.rightToLeft, child: MyMaterialApp(), inheritTheme: true, ctx: context),
+                    PageTransition(type: PageTransitionType.rightToLeft, child: WallDetails(), inheritTheme: true, ctx: context),
                   );
                 },
                 child: Stack(

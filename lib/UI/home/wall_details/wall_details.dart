@@ -1,8 +1,6 @@
 import 'package:admob_flutter/admob_flutter.dart';
 import 'package:flutter/material.dart';
 
-
-
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_app_bar_2_0_0_custom_fix/scroll_app_bar.dart';
@@ -105,6 +103,8 @@ class _WallDetailsState extends State<WallDetails> {
     setState(() {
       firstItems = firstFourItems;
       secondItems = remainingItems;
+      print(firstItems);
+      print(secondItems);
     });
   }
 
@@ -134,15 +134,6 @@ class _WallDetailsState extends State<WallDetails> {
           controller: _controller,
           child: Column(
             children: [
-              // ConstrainedBox(
-              //   constraints: const BoxConstraints(
-              //     minWidth: 320, // minimum recommended width
-              //     minHeight: 320, // minimum recommended height
-              //     maxWidth: 400,
-              //     maxHeight: 400,
-              //   ),
-              //   child: AdWidget(ad: nativeAd!),
-              // ),
               ListView.builder(
                 physics: NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
@@ -204,41 +195,44 @@ class _WallDetailsState extends State<WallDetails> {
                                 ),
                               ),
                             )
-                          : Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: GridView.builder(
-                                physics: NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                itemCount: secondItems.length,
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: color.columnIndex, mainAxisExtent: h / 4, crossAxisSpacing: 8, mainAxisSpacing: 8),
-                                itemBuilder: (context, index) {
-                                  // Check if it's time to show a full-width container
+                          : index == 2
+                              ? Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: GridView.builder(
+                                    physics: NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    itemCount: secondItems.length,
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: color.columnIndex, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                                    itemBuilder: (context, index) {
+                                      print(secondItems[index]);
+                                      // Check if it's time to show a full-width container
 
-                                  return InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        PageTransition(
-                                            type: PageTransitionType.rightToLeft,
-                                            child: SingleImage(singleImg: secondItems[index]['name'].toString(), img: secondItems, index: index),
-                                            inheritTheme: true,
-                                            ctx: context),
+                                      return InkWell(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            PageTransition(
+                                                type: PageTransitionType.rightToLeft,
+                                                child: SingleImage(singleImg: secondItems[index]['name'].toString(), img: secondItems, index: index),
+                                                inheritTheme: true,
+                                                ctx: context),
+                                          );
+                                        },
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(15),
+                                          child: Image.asset(
+                                            secondItems[index]['name'].toString(),
+                                            width: w,
+                                            height: h,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       );
                                     },
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: Image.asset(
-                                        secondItems[index]['name'].toString(),
-                                        width: w,
-                                        height: h,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
+                                  ),
+                                )
+                              : SizedBox();
                 },
               ),
             ],
