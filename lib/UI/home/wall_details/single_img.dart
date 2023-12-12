@@ -17,6 +17,8 @@ import 'package:path/path.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 import 'package:wall_app/Color/color.dart';
 import 'package:wall_app/UI/navigation/navigation.dart';
@@ -54,6 +56,9 @@ class _SingleImageState extends State<SingleImage> {
   SqlDb sqlDb = SqlDb();
   List localImg = [];
   int x = 0;
+  int status = 0;
+  bool adLoading = false;
+
   @override
   void initState() {
     localData();
@@ -69,8 +74,15 @@ class _SingleImageState extends State<SingleImage> {
         print(event);
         print('ggggggggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaggaaaaaaaaaaaaggggggggg');
         if (event == AdmobAdEvent.closed)
-          // handleEvent(event, args, 'Interstitial');
-          print('ggggggggggaaaaaaaaaaaaggggggggg');
+          setState(() {
+            adLoading = false;
+          });
+        if (event == AdmobAdEvent.started)
+          setState(() {
+            adLoading = false;
+          });
+        // handleEvent(event, args, 'Interstitial');
+        print('ggggggggggaaaaaaaaaaaaggggggggg');
       },
     );
     rewardAd = AdmobReward(
@@ -88,20 +100,55 @@ class _SingleImageState extends State<SingleImage> {
 
   localData() async {
     List res = await SqlDb().readData('select * from favorites');
+    List resp = await SqlDb().readData('select * from ads');
+    print(resp);
+    print('1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111');
 
     setState(() {
       localImg = res;
       print(res);
     });
-
-    await Future.delayed(Duration(seconds: 6)).then((value) async {
-      print('dddddddddddddddddddddddd');
-      final isLoaded = await interstitialAd.isLoaded;
-      interstitialAd.show();
+    if (resp.isEmpty) {
+      await SqlDb().insertData('insert into ads ("status") values("1")');
       setState(() {
-        x = 10;
+        status = 1;
       });
-    });
+    } else {
+      int x = resp[0]['status'] + 1;
+      if (x > 3) {
+        x = 1;
+      }
+
+      await SqlDb().updateData('update ads set status = "$x" where id = "1"');
+      print(status);
+      if (status == 3) {
+        print('ddddddddddddddddaaaaaaaaaaaaaaaaaaaaaaadddddddd');
+        final isLoaded = await interstitialAd.isLoaded;
+        interstitialAd.load();
+        interstitialAd.show();
+        setState(() {
+          x = 10;
+        });
+        ;
+      }
+      setState(() {
+        status = x;
+      });
+    }
+  }
+
+  ads(BuildContext context) async {
+    showDialog(
+      barrierDismissible: true,
+      context: context,
+      builder: (context) => Center(child: SizedBox(width: 50, height: 50, child: CircularProgressIndicator())),
+    );
+
+    print('cccccccccccccccccccc');
+
+    localData();
+    interstitialAd.show();
+    Navigator.pop(context);
   }
 
   @override
@@ -152,13 +199,10 @@ class _SingleImageState extends State<SingleImage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                      onPressed: () {
-                        if (x == 0) {
-                          interstitialAd.show();
+                      onPressed: () async {
+                        if (status == 3) {
+                          ads(context);
                         } else {
-                          setState(() {
-                            x = 10;
-                          });
                           Navigator.pop(context);
                         }
                       },
@@ -168,28 +212,21 @@ class _SingleImageState extends State<SingleImage> {
                       )),
                   IconButton(
                       onPressed: () async {
-                        if (x == 0) {
-                          interstitialAd.show();
-                        } else {
-                          setState(() {
-                            x = 10;
-                          });
-                          setState(() {
-                            share = true;
-                            isDownloading = true;
-                          });
-                          final directory = await getExternalStorageDirectory();
+                        setState(() {
+                          share = true;
+                          isDownloading = true;
+                        });
+                        final directory = await getExternalStorageDirectory();
 
-                          final url = Uri.parse(imageUrl);
-                          final response = await http.get(url);
-                          var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
-                          print(ss);
-                          setState(() {
-                            isDownloading = false;
-                            share = false;
-                          });
-                          await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
-                        }
+                        final url = Uri.parse(imageUrl);
+                        final response = await http.get(url);
+                        var ss = await File('${directory!.path}myItem.png').writeAsBytes(response.bodyBytes);
+                        print(ss);
+                        setState(() {
+                          isDownloading = false;
+                          share = false;
+                        });
+                        await FlutterShare.shareFile(title: 'Compartilhar comprovante', filePath: ss.path, fileType: 'image/png');
                       },
                       icon: Icon(
                         Icons.reply_all_rounded,
@@ -212,14 +249,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
-                          if (x == 0) {
-                            interstitialAd.show();
-                          } else {
-                            setState(() {
-                              x = 10;
-                            });
-                            info(context);
-                          }
+                          info(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -237,10 +267,7 @@ class _SingleImageState extends State<SingleImage> {
                                 ),
                                 Text(
                                   "Info",
-                                  style: TextStyle(
-                                    color: fontColor,
-                                    fontFamily: font,
-                                  ),
+                                  style: TextStyle(color: white, fontFamily: font, fontWeight: FontWeight.normal),
                                 ),
                               ],
                             ),
@@ -253,14 +280,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () {
-                          if (x == 0) {
-                            interstitialAd.show();
-                          } else {
-                            setState(() {
-                              x = 10;
-                            });
-                            imageSave(context);
-                          }
+                          imageSave(context);
                           // _saveImage(context);
                         },
                         child: Padding(
@@ -279,10 +299,7 @@ class _SingleImageState extends State<SingleImage> {
                                   ),
                                   Text(
                                     "Save",
-                                    style: TextStyle(
-                                      color: fontColor,
-                                      fontFamily: font,
-                                    ),
+                                    style: TextStyle(color: white, fontFamily: font, fontWeight: FontWeight.normal),
                                   ),
                                 ],
                               )),
@@ -294,14 +311,7 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          if (x == 0) {
-                            interstitialAd.show();
-                          } else {
-                            setState(() {
-                              x = 10;
-                            });
-                            apply(context);
-                          }
+                          apply(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -319,11 +329,7 @@ class _SingleImageState extends State<SingleImage> {
                                   ),
                                   Text(
                                     "Apply",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white70,
-                                      fontFamily: font,
-                                    ),
+                                    style: TextStyle(color: white, fontFamily: font, fontWeight: FontWeight.normal),
                                   ),
                                 ],
                               )),
@@ -335,20 +341,16 @@ class _SingleImageState extends State<SingleImage> {
                       child: InkWell(
                         splashColor: Colors.white24,
                         onTap: () async {
-                          if (x == 0) {
-                            interstitialAd.show();
+                          setState(() {
+                            x = 10;
+                          });
+                          if (localImg.any((element) => element['img'] == selectedImg)) {
+                            await SqlDb().deleteData('DELETE FROM favorites where img ="$selectedImg" ');
                           } else {
-                            setState(() {
-                              x = 10;
-                            });
-                            if (localImg.any((element) => element['img'] == selectedImg)) {
-                              await SqlDb().deleteData('DELETE FROM favorites where img ="$selectedImg" ');
-                            } else {
-                              await SqlDb().insertData('insert into favorites ("img","name") values("$selectedImg","$singleImg")');
-                            }
-
-                            localData();
+                            await SqlDb().insertData('insert into favorites ("img","name") values("$selectedImg","$singleImg")');
                           }
+
+                          localData();
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -366,10 +368,7 @@ class _SingleImageState extends State<SingleImage> {
                                   ),
                                   Text(
                                     "Favorite",
-                                    style: TextStyle(
-                                      color: fontColor,
-                                      fontFamily: font,
-                                    ),
+                                    style: TextStyle(color: white, fontFamily: font, fontWeight: FontWeight.normal),
                                   ),
                                 ],
                               )),
@@ -398,7 +397,11 @@ class _SingleImageState extends State<SingleImage> {
                               flex: 2,
                             ),
                             Text(
-                              share ? "preparing Design..." : "Saving Design...",
+                              adLoading
+                                  ? "Ad Loding"
+                                  : share
+                                      ? "preparing Design..."
+                                      : "Saving Design...",
                               style: TextStyle(
                                 fontSize: 18,
                                 color: fontColor,
@@ -422,6 +425,7 @@ class _SingleImageState extends State<SingleImage> {
 
   Future<void> setWallpaper(int? selectedOption, BuildContext context) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    String msg = '';
     setState(() {
       share = true;
       isDownloading = true;
@@ -437,38 +441,48 @@ class _SingleImageState extends State<SingleImage> {
       int location = await WallpaperManager.HOME_SCREEN;
       print(location); //can be Home/Lock Screen
       bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
+      setState(() {
+        msg = 'home screen image was successfully changed.';
+      });
     } else if (selectedOption == 2) {
       // await WallpaperManager.clearWallpaper();
       int location = await WallpaperManager.LOCK_SCREEN;
       print(location); //can be Home/Lock Screen
       bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
+      setState(() {
+        msg = 'Lock screen image was successfully changed.';
+      });
     } else if (selectedOption == 3) {
       // await WallpaperManager.clearWallpaper();
       int location = await WallpaperManager.BOTH_SCREEN;
       print(location); //can be Home/Lock Screen
       bool result = await WallpaperManager.setWallpaperFromFile(path.path, location);
+      setState(() {
+        msg = 'Lock screen and Home screen image was successfully changed.';
+      });
     } else if (selectedOption == 4) {}
     setState(() {
       share = false;
       isDownloading = false;
     });
-    scaffoldMessenger.showSnackBar(SnackBar(
-      content: Text(
-        'wallpaper successfully added',
-        style: TextStyle(
-          fontSize: 12,
-          color: Color.fromARGB(255, 218, 210, 210),
-          fontWeight: FontWeight.bold,
-        ),
+
+    showTopSnackBar(
+      Overlay.of(context),
+      CustomSnackBar.success(
+        textStyle: TextStyle(color: white),
+        message: msg,
       ),
-      backgroundColor: menuD,
-    ));
+    );
   }
 
+  load() async {}
   apply(BuildContext context) {
+    var h = MediaQuery.of(context).size.height;
+    var w = MediaQuery.of(context).size.width;
     content:
     int? selectedOption = 1;
     showDialog(
+      barrierDismissible: true,
       context: context,
       builder: (context) {
         return StatefulBuilder(builder: (context, setState) {
@@ -481,109 +495,175 @@ class _SingleImageState extends State<SingleImage> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text("CANCEL", style: TextStyle(color: white3, fontSize: 12))),
+                  child: Text("CANCEL", style: TextStyle(color: white3, fontSize: 18))),
               TextButton(
                   onPressed: () async {
-                    await setWallpaper(selectedOption, context);
+                    setState(
+                      () {
+                        isDownloading = true;
+                      },
+                    );
 
+                    await setWallpaper(selectedOption, context);
+                    setState(
+                      () {
+                        isDownloading = false;
+                      },
+                    );
                     Navigator.pop(context);
                   },
-                  child: Text("OK", style: TextStyle(color: white2, fontSize: 12)))
+                  child: Text("OK", style: TextStyle(color: white1, fontSize: 18)))
             ],
-            content: Container(
-              width: MediaQuery.of(context).size.width,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  SizedBox(
-                    height: 12,
+            content: Stack(
+              children: [
+                Container(
+                  width: MediaQuery.of(context).size.width,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(unselectedWidgetColor: Colors.red, disabledColor: Colors.blue),
+                    child: StreamBuilder<Object>(
+                        stream: null,
+                        builder: (context, snapshot) {
+                          return Stack(
+                            children: [
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  SizedBox(
+                                    height: 12,
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 25),
+                                    child: Text("Set As:", style: TextStyle(color: white1, fontSize: 20)),
+                                  ),
+                                  ListTile(
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                    title: Text('Home Screen', style: TextStyle(color: white1, fontSize: 18)),
+                                    leading: Radio<int>(
+                                      fillColor: MaterialStateColor.resolveWith((states) => white2),
+                                      value: 1,
+                                      groupValue: selectedOption,
+                                      onChanged: (int? value) {
+                                        setState(() {
+                                          selectedOption = value;
+                                          print("Selected Option: $selectedOption");
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  ListTile(
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                    title: Text('Lock Screen', style: TextStyle(color: white1, fontSize: 18)),
+                                    leading: Radio<int>(
+                                      fillColor: MaterialStateColor.resolveWith((states) => white2),
+                                      value: 2,
+                                      groupValue: selectedOption,
+                                      onChanged: (int? value) {
+                                        setState(() {
+                                          selectedOption = value;
+                                          print("Selected Option: $selectedOption");
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  Stack(
+                                    children: [
+                                      ListTile(
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                        title: Text('Home & Lock Screens', style: TextStyle(color: white1, fontSize: 18)),
+                                        leading: Radio<int>(
+                                          fillColor: MaterialStateColor.resolveWith((states) => white2),
+                                          value: 3,
+                                          groupValue: selectedOption,
+                                          onChanged: (int? value) {
+                                            setState(() {
+                                              selectedOption = value;
+                                              print("Selected Option: $selectedOption");
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      processing ? Center(child: CircularProgressIndicator()) : SizedBox()
+                                    ],
+                                  ),
+                                  // ListTile(
+                                  //   contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                  //   title: Text('Crop', style: TextStyle(color: white1, fontSize: 18)),
+                                  //   leading: Radio<int>(
+                                  //     fillColor: MaterialStateColor.resolveWith((states) => white2),
+                                  //     value: 4,
+                                  //     groupValue: selectedOption,
+                                  //     onChanged: (int? value) {
+                                  //       setState(() {
+                                  //         selectedOption = value;
+                                  //         print("Selected Option: $selectedOption");
+                                  //       });
+                                  //     },
+                                  //   ),
+                                  // ),
+                                  // ListTile(
+                                  //   contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                  //   title: Text(
+                                  //     'Set with...',
+                                  //     style: TextStyle(color: white1, fontSize: 18),
+                                  //   ),
+                                  //   leading: Radio<int>(
+                                  //     fillColor: MaterialStateColor.resolveWith((states) => white2),
+                                  //     value: 5,
+                                  //     groupValue: selectedOption,
+                                  //     onChanged: (int? value) {
+                                  //       setState(() {
+                                  //         selectedOption = value;
+                                  //         print("Selected Option: $selectedOption");
+                                  //       });
+                                  //     },
+                                  //   ),
+                                  // ),
+                                ],
+                              ),
+                            ],
+                          );
+                        }),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 25),
-                    child: Text("Set As:", style: TextStyle(color: white2, fontSize: 20)),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    title: Text('Home Screen', style: TextStyle(color: white2, fontSize: 18)),
-                    leading: Radio<int>(
-                      value: 1,
-                      groupValue: selectedOption,
-                      onChanged: (int? value) {
-                        setState(() {
-                          selectedOption = value;
-                          print("Selected Option: $selectedOption");
-                        });
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    title: Text('Lock Screen', style: TextStyle(color: white2, fontSize: 18)),
-                    leading: Radio<int>(
-                      value: 2,
-                      groupValue: selectedOption,
-                      onChanged: (int? value) {
-                        setState(() {
-                          selectedOption = value;
-                          print("Selected Option: $selectedOption");
-                        });
-                      },
-                    ),
-                  ),
-                  Stack(
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                        title: Text('Home & Lock Screens', style: TextStyle(color: white2, fontSize: 18)),
-                        leading: Radio<int>(
-                          value: 3,
-                          groupValue: selectedOption,
-                          onChanged: (int? value) {
-                            setState(() {
-                              selectedOption = value;
-                              print("Selected Option: $selectedOption");
-                            });
-                          },
+                ),
+                isDownloading
+                    ? Padding(
+                        padding: const EdgeInsets.all(15.0),
+                        child: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(color: menuD, borderRadius: BorderRadius.circular(10)),
+                          height: h / 6,
+                          width: w,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Spacer(),
+                              CircularProgressIndicator(color: navSelect, strokeWidth: 5),
+                              Spacer(
+                                flex: 2,
+                              ),
+                              Text(
+                                adLoading
+                                    ? "Ad Loding"
+                                    : share
+                                        ? "preparing Design..."
+                                        : "Saving Design...",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: fontColor,
+                                  fontFamily: font,
+                                ),
+                              ),
+                              Spacer(
+                                flex: 5,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      processing ? Center(child: CircularProgressIndicator()) : SizedBox()
-                    ],
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    title: Text('Crop', style: TextStyle(color: white2, fontSize: 18)),
-                    leading: Radio<int>(
-                      value: 4,
-                      groupValue: selectedOption,
-                      onChanged: (int? value) {
-                        setState(() {
-                          selectedOption = value;
-                          print("Selected Option: $selectedOption");
-                        });
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    title: Text(
-                      'Set with...',
-                      style: TextStyle(color: white2, fontSize: 18),
-                    ),
-                    leading: Radio<int>(
-                      value: 5,
-                      groupValue: selectedOption,
-                      onChanged: (int? value) {
-                        setState(() {
-                          selectedOption = value;
-                          print("Selected Option: $selectedOption");
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                      )
+                    : SizedBox(),
+              ],
             ),
 
             // Set the default value here
@@ -742,17 +822,14 @@ class _SingleImageState extends State<SingleImage> {
       isDownloading = false;
     });
     message = e.toString();
-    scaffoldMessenger.showSnackBar(SnackBar(
-      content: Text(
-        'Image successfully saved',
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
+
+    showTopSnackBar(
+      Overlay.of(context),
+      CustomSnackBar.success(
+        textStyle: TextStyle(color: white),
+        message: 'Image successfully saved',
       ),
-      backgroundColor: menuD,
-    ));
+    );
   }
 
   String? getInterstitialAdUnitId() {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_share/flutter_share.dart';
+import 'package:open_store/open_store.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../Color/color.dart';
 import '../../provider/all_provider.dart';
@@ -55,10 +57,24 @@ class _MenuButtonState extends State<MenuButton> {
       print('I Second Item');
     } else if (choice == Constants.ThirdItem) {
       print('I Third Item');
+      launchUrl(Uri.parse('http://play.google.com/store/search?q=${Uri.encodeQueryComponent('novatechzone')}'));
+      // OpenStore.instance.open(
+      //   appStoreId: '284815942', // AppStore id of your app for iOS
+      //   appStoreIdMacOS: '284815942', // AppStore id of your app for MacOS (appStoreId used as default)
+      //   androidAppBundleId: 'com.google.android.googlequicksearchbox', // Android app bundle package name
+      //   windowsProductId: '9NZTWSQNTD0S',
+      //   // Microsoft store id for Widnows apps
+      // );
     } else if (choice == Constants.fourthItem) {
+      showDialog(
+        barrierDismissible: true,
+        context: context,
+        builder: (context) => Center(child: SizedBox(width: 50, height: 50, child: CircularProgressIndicator())),
+      );
       await FlutterShare.share(
           title:
               'Relaxing Wallpaper HD\nI Would like to share this with you. Here You Can Download This Application from PlayStore\nhttps://play.google.com/store/apps/details?id=relaxing.wallpaperhd.backgrounds ');
+      Navigator.pop(context);
     } else if (choice == Constants.fifthItem) {
       about();
     }

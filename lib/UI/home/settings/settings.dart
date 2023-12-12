@@ -1,4 +1,6 @@
+// import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:open_settings_plus/android/open_settings_plus_android.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_app_cache_manager/simple_app_cache_manager.dart';
 
@@ -15,6 +17,7 @@ class Settings extends StatefulWidget {
 }
 
 class _SettingsState extends State<Settings> with CacheMixin {
+  final settingsAndroid = OpenSettingsPlusAndroid();
   bool isLite = true;
   List modeData = [];
   SqlDb sqlDb = SqlDb();
@@ -173,7 +176,10 @@ class _SettingsState extends State<Settings> with CacheMixin {
                   ),
                 ),
                 InkWell(
-                  onTap: () {},
+                  onTap: () {
+                    settingsAndroid.notification();
+                    // AppSettings.openAppSettings(type: AppSettingsType.location);
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(12.0),
                     width: w,
@@ -283,7 +289,7 @@ class _SettingsState extends State<Settings> with CacheMixin {
                           height: 4,
                         ),
                         Text(
-                          "Copyright information Copyright information Copyright informationCopyright informationCopyright information Copyright information Copyright information",
+                          "All Designs that are available in the App are free and it's credit goes to their respective owners. These Designs are licensed under the Creative Commons Zero (CCO) license. Please contact us if you find any Design that violates any rules and we will remove the Design.",
                           style: TextStyle(
                             fontSize: 14,
                             color: color.pfont2,

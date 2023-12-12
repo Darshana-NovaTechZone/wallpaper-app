@@ -15,8 +15,8 @@ class SqlDb {
 
   intialDb() async {
     String databasepath = await getDatabasesPath();
-    String path = join(databasepath, 'ss.db');
-    Database mydb = await openDatabase(path, onCreate: _onCreate, version: 4, onUpgrade: _onUpgrade);
+    String path = join(databasepath, 'qs.db');
+    Database mydb = await openDatabase(path, onCreate: _onCreate, version: 5, onUpgrade: _onUpgrade);
     return mydb;
   }
 
@@ -43,6 +43,20 @@ class SqlDb {
     "id" INTEGER  NOT NULL PRIMARY KEY  AUTOINCREMENT,
       "status" INTEGER NOT NULL,
        "colum" INTEGER NOT NULL
+      
+ 
+
+      
+    
+
+
+  )
+ ''');
+     await db.execute('''
+  CREATE TABLE "ads" (
+    "id" INTEGER  NOT NULL PRIMARY KEY  AUTOINCREMENT,
+      "status" INTEGER NOT NULL
+     
       
  
 

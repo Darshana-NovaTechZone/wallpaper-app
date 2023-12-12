@@ -84,12 +84,20 @@ class _HomeState extends State<Home> {
                         ),
                       ),
                     ),
+                    Container(
+                      decoration: BoxDecoration(color: black.withOpacity(0.4), borderRadius: BorderRadius.circular(15)),
+                      height: h / 4,
+                      width: w,
+                    ),
                     Positioned(
                       bottom: 12,
                       left: 12,
-                      child: Text(
-                        home[index]['n'],
-                        style: TextStyle(color: fontColor, fontSize: 18, fontFamily: font, fontWeight: FontWeight.w500),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          home[index]['n'],
+                          style: TextStyle(color: fontColor, fontSize: 18, fontFamily: font, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ],

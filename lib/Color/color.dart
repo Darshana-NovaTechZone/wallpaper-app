@@ -4,8 +4,8 @@ Color background = Color(0xff101d24);
 Color appbarDark = Color(0xff232d36);
 Color navColor = Color(0xff121212);
 
-Color navSelect = Color.fromARGB(255, 48, 79, 119);
-Color navUnSelect = Color.fromARGB(255, 88, 83, 83);
+Color navSelect = Color.fromARGB(255, 14, 99, 209);
+Color navUnSelect = Color.fromARGB(255, 97, 142, 139);
 Color fontColor = Color(0xfff4f8f9);
 Color fontColor2 = Color(0xfffcfcfc);
 Color menuD = Color(0xff2c2c2c);
